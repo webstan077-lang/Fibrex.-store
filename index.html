@@ -13,10 +13,55 @@
     <meta property="og:title" content="Fibrex Store — Discover Thousands of Products" />
     <meta property="og:description" content="Discover thousands of products with flash deals, category filters, quick shop view, wishlist, cart, and seamless checkout on Fibrex Store." />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="/logo.png" />
+    <meta property="og:image:secure_url" content="/logo.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1024" />
+    <meta property="og:image:height" content="1024" />
+    <meta property="og:image:alt" content="Fibrex Store App Icon" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Fibrex Store — Discover Thousands of Products" />
+    <meta name="twitter:description" content="Discover thousands of products with flash deals, category filters, quick shop view, wishlist, cart, and seamless checkout on Fibrex Store." />
+    <meta name="twitter:image" content="/logo.png" />
+    <meta name="twitter:image:alt" content="Fibrex Store App Icon" />
+    <meta itemprop="image" content="/logo.png" />
+    <link rel="image_src" href="/logo.png" />
+
+    <!-- Schema.org Search Engine & Social Rich Snippet -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "OnlineStore",
+      "name": "Fibrex Store",
+      "description": "Fibrex Store — Discover thousands of curated products across Electronics, Fashion, Beauty, Home, Sports, and Groceries with super-fast delivery.",
+      "logo": "/logo.png",
+      "image": "/logo.png"
+    }
+    </script>
   </head>
-  <body>
-    <div id="root"></div>
+  <body class="bg-slate-950">
+    <div id="root">
+      <!-- Instant pre-hydration splash screen with Fibrex Store Icon -->
+      <div style="position:fixed;inset:0;background:#020617;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans',sans-serif;color:white;z-index:99999;">
+        <div style="position:relative;margin-bottom:20px;">
+          <div style="position:absolute;inset:-10px;background:radial-gradient(circle,rgba(6,182,212,0.5) 0%,rgba(59,130,246,0) 70%);filter:blur(14px);border-radius:28px;"></div>
+          <img src="/logo.png" alt="Fibrex Store Logo" style="position:relative;width:112px;height:112px;border-radius:24px;object-fit:contain;box-shadow:0 12px 35px rgba(0,0,0,0.8),0 0 25px rgba(6,182,212,0.45);border:1px solid rgba(6,182,212,0.4);animation:fibrexPulse 1.8s infinite ease-in-out;" />
+        </div>
+        <div style="font-size:26px;font-weight:900;letter-spacing:-0.5px;margin-bottom:4px;display:flex;align-items:center;gap:3px;">
+          Fibrex<span style="color:#22d3ee;">.</span> Store
+        </div>
+        <div style="font-size:11px;color:rgba(103,232,249,0.85);letter-spacing:2px;text-transform:uppercase;margin-bottom:24px;font-weight:700;">
+          Loading Marketplace...
+        </div>
+        <div style="width:220px;height:5px;background:#0f172a;border-radius:999px;overflow:hidden;position:relative;border:1px solid rgba(30,41,59,0.8);">
+          <div style="position:absolute;top:0;left:0;bottom:0;width:45%;background:linear-gradient(90deg,#22d3ee,#3b82f6);border-radius:999px;animation:fibrexLoader 1.2s infinite ease-in-out;box-shadow:0 0 10px #22d3ee;"></div>
+        </div>
+        <style>
+          @keyframes fibrexPulse { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(6,182,212,0.4)); } 50% { transform: scale(1.05); filter: drop-shadow(0 0 35px rgba(6,182,212,0.8)); } }
+          @keyframes fibrexLoader { 0% { left: -45%; width: 35%; } 50% { left: 30%; width: 55%; } 100% { left: 100%; width: 35%; } }
+        </style>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

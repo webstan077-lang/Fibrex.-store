@@ -21,6 +21,7 @@ import { useCart } from '../context/CartContext';
 import { useNavigation } from '../context/NavigationContext';
 import { useAuth } from '../context/AuthContext';
 import { CATEGORIES } from '../data/categories';
+import fibrexLogoImg from '../assets/images/fibrex_app_icon_1790957656248.jpg';
 
 export const Header: React.FC = () => {
   const { cartCount, wishlist, setIsCartOpen, setIsWishlistOpen } = useCart();
@@ -87,55 +88,6 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
-      {/* Top Utility Bar with Admin / Merchant Access & Promotions */}
-      <div className="bg-slate-900 text-slate-300 text-[11px] py-1 px-3 md:px-6 hidden sm:block border-b border-slate-800">
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span className="text-purple-400 font-semibold flex items-center gap-1">
-              <Zap className="w-3 h-3 text-purple-400" /> Holiday Deals Live: Up to 50% Off Everything
-            </span>
-            <span className="text-slate-500">|</span>
-            <span>Free delivery on qualifying orders worldwide</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Swapped: Admin Portal Access in Top Utility Bar */}
-            {isAdmin ? (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => navigate('/admin')}
-                  className="bg-purple-950 text-purple-300 hover:text-white border border-purple-800 hover:border-purple-600 text-[10px] font-bold px-2.5 py-0.5 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Open Platform Admin Console"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Admin Console</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/dashboard')}
-                  className="bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-[10px] font-bold px-2.5 py-0.5 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Open Store Owner Hub"
-                >
-                  <Store className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Store Owner Hub</span>
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => openAuthModal('admin_login')}
-                className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors bg-slate-800/80 hover:bg-slate-800 px-2.5 py-0.5 rounded text-[11px] font-medium border border-slate-700/60 cursor-pointer"
-                title="Admin Portal Access"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
-                <span>Admin Portal</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Main Navbar */}
       <div className="max-w-[1600px] mx-auto px-3 md:px-6">
         <div className="flex items-center gap-3 h-14 md:h-16">
@@ -154,9 +106,9 @@ export const Header: React.FC = () => {
             className="flex items-center gap-2 shrink-0 focus:outline-none group text-left cursor-pointer"
           >
             <img
-              src="/logo.png"
-              alt="Fibrex Logo"
-              className="w-9 h-9 rounded-xl object-contain shadow-xs transition-transform group-hover:scale-105 border border-slate-100 bg-white"
+              src={fibrexLogoImg}
+              alt="Fibrex Store Logo"
+              className="w-9 h-9 md:w-10 md:h-10 rounded-xl object-contain shadow-xs transition-transform group-hover:scale-105"
               referrerPolicy="no-referrer"
             />
             <span className="text-lg md:text-xl font-extrabold tracking-tight text-slate-900">
@@ -307,10 +259,10 @@ export const Header: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => openAuthModal('signin')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-full text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-full text-xs font-bold transition-all shadow-sm hover:shadow-purple-500/20 active:scale-95 cursor-pointer border border-purple-400/30"
                 >
-                  <User className="w-4 h-4" />
-                  <span className="hidden sm:inline">Sign In</span>
+                  <User className="w-4 h-4 text-purple-100" />
+                  <span className="hidden sm:inline font-bold tracking-tight text-white drop-shadow-xs">Sign In</span>
                 </button>
               )}
 

@@ -12,6 +12,7 @@ import { WishlistModal } from './components/WishlistModal';
 import { Toast } from './components/Toast';
 import { AuthModal } from './components/AuthModal';
 import { CurrencyCountryModal } from './components/CurrencyCountryModal';
+import { WebsitePreloader } from './components/WebsitePreloader';
 
 import { HomePage } from './pages/HomePage';
 import { CategoryPage } from './pages/CategoryPage';
@@ -32,6 +33,9 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-purple-500 selection:text-white">
+      {/* Website Preloader (Shows branded icon loading before page) */}
+      <WebsitePreloader />
+
       {/* Header and Category Navigation Bar (Hidden in Admin/Dashboard for focus, or visible on marketplace) */}
       {!isAdminRoute && !isDashboardRoute && (
         <>

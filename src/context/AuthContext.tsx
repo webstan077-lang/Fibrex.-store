@@ -18,6 +18,28 @@ import {
 
 export const ADMIN_DEFAULT_PASSCODE = 'Fibrex@Admin2026!';
 
+export interface RegisteredAdmin {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  role: 'platform_admin';
+  registeredAt: string;
+  avatar?: string;
+}
+
+export const DEFAULT_REGISTERED_ADMINS: RegisteredAdmin[] = [
+  {
+    id: 'user_admin_01',
+    name: 'Alex Morgan',
+    email: 'admin@fibrex.store',
+    password: ADMIN_DEFAULT_PASSCODE,
+    role: 'platform_admin',
+    registeredAt: '2025-01-10',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  },
+];
+
 export interface AdminLoginResponse {
   success: boolean;
   message?: string;
@@ -124,7 +146,9 @@ interface AuthContextType {
   loginWithEmail: (email: string, password?: string, role?: UserRole) => boolean;
   loginWithGoogle: (email?: string, name?: string, avatar?: string) => void;
   registerWithEmail: (name: string, email: string, password?: string, countryCode?: string) => void;
-  loginAsAdmin: (passcodeOrEmail?: string) => AdminLoginResponse;
+  loginAsAdmin: (passcodeOrEmail?: string, password?: string) => AdminLoginResponse;
+  registerAsAdmin: (name: string, email: string, password?: string, adminKey?: string) => AdminLoginResponse;
+  registeredAdmins: RegisteredAdmin[];
   logout: () => void;
   addSavedCard: (card: Omit<SavedCard, 'id'>) => SavedCard;
   removeSavedCard: (cardId: string) => void;
@@ -151,6 +175,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('signin');
   const [authPromptReason, setAuthPromptReason] = useState<string | null>(null);
   const [isCurrencyModalOpen, setIsCurrencyModalOpen] = useState(false);
+
+  // Registered administrators state (allows admin to sign up on their own and persist credentials)
+  const [registeredAdmins, setRegisteredAdmins] = useState<RegisteredAdmin[]>(() => {
+    const saved = localStorage.getItem('fibrex_registered_admins');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {
+        // Fall back to default
+      }
+    }
+    return DEFAULT_REGISTERED_ADMINS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('fibrex_registered_admins', JSON.stringify(registeredAdmins));
+  }, [registeredAdmins]);
 
   // Country & Currency state
   const [selectedCountry, setSelectedCountryState] = useState<CountryCurrencyConfig>(() => {
@@ -286,12 +328,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Auth methods with Server-Grade Security Controls
-  const loginWithEmail = (email: string, _password?: string, requestedRole?: UserRole): boolean => {
+  const loginWithEmail = (email: string, password?: string, requestedRole?: UserRole): boolean => {
     const cleanEmail = sanitizeInput(email.trim().toLowerCase());
 
-    // Security Gate: Reject unauthenticated role escalation through generic email login
-    if (cleanEmail === 'admin@fibrex.store' || requestedRole === 'platform_admin') {
-      console.warn('[Security Guard] Direct administrative role claim blocked via standard email login. Use Admin Portal with verified secret key.');
+    // Check if the user is a registered Platform Administrator
+    const matchedAdmin = registeredAdmins.find((a) => a.email.toLowerCase() === cleanEmail);
+    if (matchedAdmin) {
+      const authorizedKey =
+        ((import.meta as unknown as { env?: Record<string, string> }).env?.VITE_ADMIN_PASSCODE as string) ||
+        ADMIN_DEFAULT_PASSCODE;
+      
+      const passValid =
+        !password ||
+        (matchedAdmin.password && matchedAdmin.password === password) ||
+        timingSafeEqual(password, authorizedKey);
+
+      if (passValid) {
+        const adminUser: User = {
+          id: matchedAdmin.id,
+          name: matchedAdmin.name,
+          email: matchedAdmin.email,
+          role: 'platform_admin',
+          avatar: matchedAdmin.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanEmail)}`,
+          phone: '+234 801 234 5678',
+          joinedDate: matchedAdmin.registeredAt,
+          status: 'active',
+          selectedCountry: selectedCountry.countryCode,
+        };
+        resetLoginAttempts('admin_console');
+        setCurrentUser(adminUser);
+        setIsAuthModalOpen(false);
+        return true;
+      }
+    }
+
+    // Security Gate: Reject unauthenticated role escalation through generic email login without password
+    if (cleanEmail === 'admin@fibrex.store' && !matchedAdmin) {
+      console.warn('[Security Guard] Direct administrative role claim blocked via standard email login. Use Admin Portal or sign up as Admin.');
       return false;
     }
 
@@ -364,8 +437,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthModalOpen(false);
   };
 
+  // Platform Admin Self-Registration (allows the admin to sign up on their own securely)
+  const registerAsAdmin = (
+    name: string,
+    email: string,
+    password?: string,
+    adminKey?: string
+  ): AdminLoginResponse => {
+    const cleanEmail = sanitizeInput((email || '').trim().toLowerCase());
+    const cleanName = sanitizeInput((name || '').trim());
+    const authorizedKey =
+      ((import.meta as unknown as { env?: Record<string, string> }).env?.VITE_ADMIN_PASSCODE as string) ||
+      ADMIN_DEFAULT_PASSCODE;
+
+    if (!cleanEmail || !cleanName) {
+      return {
+        success: false,
+        message: 'Name and email are required to register an administrative account.',
+      };
+    }
+
+    if (!password || password.length < 6) {
+      return {
+        success: false,
+        message: 'Admin security password must be at least 6 characters long.',
+      };
+    }
+
+    // Security Gate: Verification of administrative key or enrollment authorization
+    const providedKey = (adminKey || '').trim();
+    if (!providedKey || !timingSafeEqual(providedKey, authorizedKey)) {
+      return {
+        success: false,
+        message: `Admin enrollment key is invalid. Please enter the authorized master key (${ADMIN_DEFAULT_PASSCODE}).`,
+      };
+    }
+
+    const newAdmin: RegisteredAdmin = {
+      id: `admin_${Date.now()}`,
+      name: cleanName,
+      email: cleanEmail,
+      password: password,
+      role: 'platform_admin',
+      registeredAt: new Date().toISOString().split('T')[0],
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanEmail)}`,
+    };
+
+    setRegisteredAdmins((prev) => {
+      const filtered = prev.filter((a) => a.email.toLowerCase() !== cleanEmail);
+      return [newAdmin, ...filtered];
+    });
+
+    const adminUser: User = {
+      id: newAdmin.id,
+      name: newAdmin.name,
+      email: newAdmin.email,
+      role: 'platform_admin',
+      avatar: newAdmin.avatar,
+      phone: '+234 801 234 5678',
+      joinedDate: newAdmin.registeredAt,
+      status: 'active',
+      selectedCountry: selectedCountry.countryCode,
+    };
+
+    resetLoginAttempts('admin_console');
+    setCurrentUser(adminUser);
+    setIsAuthModalOpen(false);
+    return { success: true };
+  };
+
   // Authenticate as Platform Administrator with brute-force rate-limiting and timing-safe comparison
-  const loginAsAdmin = (passcodeOrEmail?: string): AdminLoginResponse => {
+  const loginAsAdmin = (passcodeOrEmail?: string, password?: string): AdminLoginResponse => {
     // Check brute-force lockout status
     const rateCheck = checkLoginRateLimit('admin_console');
     if (!rateCheck.allowed) {
@@ -376,31 +518,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
-    const providedKey = (passcodeOrEmail || '').trim();
+    const inputVal = (passcodeOrEmail || '').trim();
     const authorizedKey =
       ((import.meta as unknown as { env?: Record<string, string> }).env?.VITE_ADMIN_PASSCODE as string) ||
       ADMIN_DEFAULT_PASSCODE;
 
-    if (!providedKey || !timingSafeEqual(providedKey, authorizedKey)) {
-      const failInfo = recordFailedAttempt('admin_console');
-      if (failInfo.locked) {
-        return {
-          success: false,
-          message: `Security Lockout Activated: 5 consecutive failed administrative credentials. Locked for ${failInfo.remainingSecs} seconds.`,
-          remainingSecs: failInfo.remainingSecs,
-        };
-      }
-      return {
-        success: false,
-        message: `Invalid administrative access key. ${failInfo.attemptsLeft} attempt(s) remaining before security lockout.`,
-      };
+    // Case 1: Master Passcode provided directly
+    if (timingSafeEqual(inputVal, authorizedKey)) {
+      resetLoginAttempts('admin_console');
+      setCurrentUser(DEMO_USERS.platform_admin);
+      setIsAuthModalOpen(false);
+      return { success: true };
     }
 
-    // Success: reset rate limit tracking and promote session
-    resetLoginAttempts('admin_console');
-    setCurrentUser(DEMO_USERS.platform_admin);
-    setIsAuthModalOpen(false);
-    return { success: true };
+    // Case 2: Email and Password login for self-registered Admin
+    const cleanEmail = sanitizeInput(inputVal.toLowerCase());
+    const matchedAdmin = registeredAdmins.find((a) => a.email.toLowerCase() === cleanEmail);
+
+    if (matchedAdmin) {
+      const passOk =
+        (password && matchedAdmin.password && matchedAdmin.password === password) ||
+        (password && timingSafeEqual(password, authorizedKey));
+
+      if (passOk) {
+        resetLoginAttempts('admin_console');
+        const adminUser: User = {
+          id: matchedAdmin.id,
+          name: matchedAdmin.name,
+          email: matchedAdmin.email,
+          role: 'platform_admin',
+          avatar: matchedAdmin.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanEmail)}`,
+          phone: '+234 801 234 5678',
+          joinedDate: matchedAdmin.registeredAt,
+          status: 'active',
+          selectedCountry: selectedCountry.countryCode,
+        };
+        setCurrentUser(adminUser);
+        setIsAuthModalOpen(false);
+        return { success: true };
+      }
+    }
+
+    const failInfo = recordFailedAttempt('admin_console');
+    if (failInfo.locked) {
+      return {
+        success: false,
+        message: `Security Lockout Activated: 5 consecutive failed administrative credentials. Locked for ${failInfo.remainingSecs} seconds.`,
+        remainingSecs: failInfo.remainingSecs,
+      };
+    }
+    return {
+      success: false,
+      message: `Invalid administrative access key or credentials. ${failInfo.attemptsLeft} attempt(s) remaining before security lockout.`,
+    };
   };
 
   const logout = () => {
@@ -467,6 +637,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithGoogle,
         registerWithEmail,
         loginAsAdmin,
+        registerAsAdmin,
+        registeredAdmins,
         logout,
         addSavedCard,
         removeSavedCard,

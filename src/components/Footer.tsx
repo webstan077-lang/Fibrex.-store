@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
 import { CATEGORIES } from '../data/categories';
+import fibrexLogoImg from '../assets/images/fibrex_app_icon_1790957656248.jpg';
 
 export const Footer: React.FC = () => {
   const { navigate } = useNavigation();
@@ -84,9 +85,9 @@ export const Footer: React.FC = () => {
               className="flex items-center gap-2.5 group text-left cursor-pointer"
             >
               <img
-                src="/logo.png"
+                src={fibrexLogoImg}
                 alt="Fibrex Logo"
-                className="w-9 h-9 rounded-xl object-contain bg-white p-0.5 shadow-md group-hover:scale-105 transition-transform"
+                className="w-9 h-9 rounded-xl object-contain shadow-md group-hover:scale-105 transition-transform"
                 referrerPolicy="no-referrer"
               />
               <span className="text-xl font-black tracking-tight text-white">

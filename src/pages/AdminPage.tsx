@@ -23,12 +23,17 @@ import {
   Globe,
   BarChart3,
   Filter,
+  Database,
+  Download,
+  Check,
+  Code,
 } from 'lucide-react';
 import { useStoreData } from '../context/StoreDataContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../context/NavigationContext';
 import { DEMO_USERS } from '../context/AuthContext';
 import { Product, Category, Store as StoreType } from '../types';
+import { SEPARATE_TABLES, SeparateTableItem } from '../data/supabaseSql';
 
 export const AdminPage: React.FC = () => {
   const {
@@ -50,11 +55,30 @@ export const AdminPage: React.FC = () => {
   const { subSection, navigate } = useNavigation();
 
   const [activeTab, setActiveTab] = useState<string>(() => {
-    if (['users', 'stores', 'products', 'orders', 'categories', 'inventory', 'promotions', 'analytics', 'reports', 'settings'].includes(subSection || '')) {
+    if (['users', 'stores', 'products', 'orders', 'categories', 'inventory', 'promotions', 'analytics', 'reports', 'settings', 'supabase'].includes(subSection || '')) {
       return subSection || 'overview';
     }
     return 'overview';
   });
+
+  const [copiedType, setCopiedType] = useState<string | null>(null);
+  const [selectedTableId, setSelectedTableId] = useState<string>('profiles');
+
+  const handleCopySql = (text: string, type: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedType(type);
+    setTimeout(() => setCopiedType(null), 3000);
+  };
+
+  const handleDownloadTableSql = (table: SeparateTableItem) => {
+    const blob = new Blob([table.sql], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = table.filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const [productSearch, setProductSearch] = useState('');
   const [storeSearch, setStoreSearch] = useState('');
@@ -114,6 +138,7 @@ export const AdminPage: React.FC = () => {
             { id: 'promotions', label: 'Platform Promos', icon: Tag, badge: promotions.length },
             { id: 'analytics', label: 'Growth Analytics', icon: TrendingUp },
             { id: 'settings', label: 'System Settings', icon: Settings },
+            { id: 'supabase', label: 'Supabase SQL Tables', icon: Database, badge: 'Super Table' },
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -507,6 +532,177 @@ export const AdminPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* ========================================================================= */}
+        {/* SUPABASE SQL SEPARATE TABLES (11 INDIVIDUAL TABLES) */}
+        {/* ========================================================================= */}
+        {activeTab === 'supabase' && (() => {
+          const currentTable = SEPARATE_TABLES.find((t) => t.id === selectedTableId) || SEPARATE_TABLES[0];
+
+          return (
+            <div className="space-y-6 animate-fade-in">
+              {/* Header Banner */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-purple-100 text-purple-700 rounded-xl">
+                      <Database className="w-5 h-5" />
+                    </div>
+                    <h1 className="text-xl md:text-2xl font-black text-slate-900">
+                      11 Separate Supabase SQL Tables
+                    </h1>
+                    <span className="bg-purple-100 text-purple-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-purple-200">
+                      Individual Tables
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    All tables are separated from each other so you can copy and input them one by one directly into Supabase SQL Editor.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleCopySql(currentTable.sql, currentTable.id)}
+                    className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                  >
+                    {copiedType === currentTable.id ? (
+                      <>
+                        <Check className="w-4 h-4 text-white" />
+                        <span>Copied {currentTable.filename}!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        <span>Copy {currentTable.name} SQL</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadTableSql(currentTable)}
+                    className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 font-bold text-xs flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer border border-slate-700"
+                    title={`Download ${currentTable.filename}`}
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download .sql</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Main Content: Table Selector & Viewer */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                {/* Left 4 Cols: 11 Tables List */}
+                <div className="lg:col-span-4 bg-white p-3 rounded-2xl border border-slate-200 shadow-xs space-y-1 h-fit">
+                  <div className="px-3 py-2 border-b border-slate-100 mb-1 flex items-center justify-between">
+                    <span className="text-[11px] font-black uppercase text-slate-400 tracking-wider">
+                      Select Table (1 - 11)
+                    </span>
+                    <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                      11 Tables
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    {SEPARATE_TABLES.map((table) => {
+                      const isSelected = selectedTableId === table.id;
+                      return (
+                        <button
+                          key={table.id}
+                          type="button"
+                          onClick={() => setSelectedTableId(table.id)}
+                          className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-purple-600 text-white font-bold shadow-xs'
+                              : 'text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <span
+                              className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-mono font-bold shrink-0 ${
+                                isSelected ? 'bg-purple-800 text-white' : 'bg-slate-200 text-slate-700'
+                              }`}
+                            >
+                              {table.num}
+                            </span>
+                            <span className="truncate">{table.name}</span>
+                          </div>
+                          <span
+                            className={`text-[10px] font-mono font-normal truncate ml-2 ${
+                              isSelected ? 'text-purple-200' : 'text-slate-400'
+                            }`}
+                          >
+                            {table.filename}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Right 8 Cols: Active Table SQL Editor Display */}
+                <div className="lg:col-span-8 space-y-4">
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                    {/* Table Title Bar */}
+                    <div className="p-4 bg-slate-900 text-slate-200 flex flex-wrap items-center justify-between gap-2 border-b border-slate-800">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Code className="w-4 h-4 text-amber-400" />
+                          <h2 className="font-mono text-xs md:text-sm font-bold text-amber-300">
+                            Table {currentTable.num}: {currentTable.name}
+                          </h2>
+                          <span className="bg-slate-800 text-slate-300 text-[10px] font-mono px-2 py-0.5 rounded border border-slate-700">
+                            /supabase_tables/{currentTable.filename}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          {currentTable.description}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopySql(currentTable.sql, currentTable.id)}
+                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        {copiedType === currentTable.id ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-white" />
+                            <span>Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copy This Table SQL</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Isolated SQL Code */}
+                    <div className="p-4 bg-slate-950 font-mono text-xs text-emerald-400 max-h-[500px] overflow-y-auto leading-relaxed">
+                      <pre className="whitespace-pre-wrap">{currentTable.sql}</pre>
+                    </div>
+                  </div>
+
+                  {/* Supabase 3-Step Run Guide */}
+                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs text-xs space-y-2">
+                    <p className="font-bold text-slate-900 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      How to input {currentTable.name} into Supabase:
+                    </p>
+                    <ol className="list-decimal pl-5 text-[11px] text-slate-600 space-y-1">
+                      <li>Click the <strong>"Copy This Table SQL"</strong> button above.</li>
+                      <li>In your Supabase project dashboard, open the <strong>SQL Editor</strong> (`&gt;_`).</li>
+                      <li>Click <strong>New query</strong>, paste the copied snippet, and click <strong>Run</strong>.</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </main>
 
       {/* ========================================================================= */}
