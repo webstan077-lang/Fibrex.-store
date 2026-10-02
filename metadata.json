@@ -1,0 +1,6 @@
+{
+  "name": "Fibrex Store",
+  "description": "Discover thousands of products with flash deals, category filters, quick shop view, wishlist, cart, and seamless checkout on Fibrex Store.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
